@@ -1,3 +1,6 @@
+#define FUSE_USE_VERSION 26
+
+#include <assert.h>
 #include <fuse.h>
 #include <errno.h>
 #include <stddef.h>
@@ -161,7 +164,7 @@ int sqlfs_read(const char *path,
 }
 
 int sqlfs_write(const char *path,
-		char *buf,
+		const char *buf,
 		size_t size,
 		off_t off,
 		struct fuse_file_info *fi)
@@ -209,7 +212,7 @@ int sqlfs_write(const char *path,
 	return 0;
 }
 
-int sqlfs_rename(const char *old, const char *new, unsigned int flags)
+int sqlfs_rename(const char *old, const char *new)
 {
 	const char *sql = "UPDATE FILES SET fname='?' WHERE fname='?';";
 	struct fuse_context *cxt;
@@ -233,7 +236,7 @@ int sqlfs_rename(const char *old, const char *new, unsigned int flags)
 	return 0;
 }
 
-int sqlfs_getattr(const char *path, struct stat *st_buf, struct fuse_file_info *fi)
+int sqlfs_getattr(const char *path, struct stat *st_buf)
 {
 	const char *sql = "SELECT attr, data FROM FILES WHERE fname='?';";
 	sqlite3_stmt *stmt;
@@ -275,23 +278,22 @@ int sqlfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	const char *sql = "SELECT fname FROM FILES;";
 	sqlite3 *db;
 	sqlite3_stmt *stmt;
-	char *fname;
+	const char *fname;
 
 	(void) offset;
 	(void) fi;
-	(void) flags;
 
 	if (strcmp(path, "/") != 0)
 		return -ENOENT;
 
-	filler(buf, ".", NULL, 0, 0);
-	filler(buf, "..", NULL, 0, 0);
+	filler(buf, ".", NULL, 0);
+	filler(buf, "..", NULL, 0);
 
 	db = (sqlite3 *)fuse_get_context()->private_data;
 	sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		fname = sqlite3_column_text(stmt, 0);
-		filler(buf, fname, NULL, 0, 0);
+		filler(buf, fname, NULL, 0);
 	}
 	sqlite3_finalize(stmt);
 
