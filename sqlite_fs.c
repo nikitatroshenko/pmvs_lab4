@@ -1,5 +1,6 @@
 #include <fuse.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +22,7 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-void *sqlfs_init()
+void *sqlfs_init(struct fuse_conn_info *conn)
 {
 	sqlite3 *db;
 	const char *sql;
