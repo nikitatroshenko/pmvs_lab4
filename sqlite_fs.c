@@ -48,7 +48,7 @@ void sqlfs_destroy(void *db)
 	sqlite3_close(db);
 }
 
-int sqlfs_create(const char *path, int mode)
+int sqlfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
 	const char *sql = "INSERT INTO FILES(fname) VALUES('?');";
 	struct fuse_context *cxt;
@@ -121,7 +121,11 @@ int sqlfs_unlink(const char *path)
 	return 0;
 }
 
-int sqlfs_read(const char *path, char *buf, size_t size, off_t off)
+int sqlfs_read(const char *path,
+		char *buf,
+		size_t size,
+		off_t off,
+		struct fuse_file_info *fi)
 {
 	const char *sql = "SELECT data FROM FILES WHERE fname='?';";
 	struct fuse_context *cxt;
@@ -155,7 +159,11 @@ int sqlfs_read(const char *path, char *buf, size_t size, off_t off)
 	return size;
 }
 
-int sqlfs_write(const char *path, char *buf, size_t size, off_t off)
+int sqlfs_write(const char *path,
+		char *buf,
+		size_t size,
+		off_t off,
+		struct fuse_file_info *fi)
 {
 	const char *sql = "SELECT data FROM FILES WHERE fname='?'";
 	struct fuse_context *cxt;
@@ -292,8 +300,9 @@ int sqlfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static struct fuse_operations sqlfs_oper = {
 	.getattr	= sqlfs_getattr,
 	.readdir	= sqlfs_readdir,
-	.create		= sqlfs_create,
+	.mknod		= sqlfs_mknod,
 	.open		= sqlfs_open,
+	.unlink		= sqlfs_unlink,
 	.read		= sqlfs_read,
 	.write		= sqlfs_write,
 	.rename		= sqlfs_rename,
